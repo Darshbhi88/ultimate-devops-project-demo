@@ -7,15 +7,14 @@ RUN apk add --no-cache libc6-compat
 
 WORKDIR /app
 
-COPY ./src/frontend/package*.json ./
+COPY package*.json ./
 RUN npm ci
 
 FROM node:20-alpine AS builder
 RUN apk add --no-cache libc6-compat protobuf-dev protoc
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY ./pb ./pb
-COPY ./src/frontend .
+COPY . .
 
 RUN npm run grpc:generate
 RUN npm run build
@@ -32,8 +31,8 @@ RUN adduser -S nextjs -u 1001
 COPY --from=builder /app/next.config.js ./
 COPY --from=builder /app/utils/telemetry/Instrumentation.js ./
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./package.json
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
 
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
